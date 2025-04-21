@@ -21,14 +21,16 @@ def getNftData(walletAddress, chain):
 
         for t in data.get("ownedNfts", {}):
             assetData.append({"imgURL": t["image"]["originalUrl"],
-                          "collectionName": t["contract"]["openSeaMetadata"]["collectionName"],
+                          "collectionName": t["collection"]["name"],
                           "contract": t["contract"]["address"],
-                          "tokenID": t["tokenId"]})
+                          "tokenID": t["tokenId"],
+                          "isSpam": t["contract"]["isSpam"],
+                          "metadata": t["raw"]["metadata"]})
         #Pagination Handling, preventing identical pageKey Bug
         if data.get("pageKey") is not None:
             if data.get("pageKey") == pageKey:
                 logHandler.write("[Error] Identical pageKey found for : " + walletAddress + " on " + chain + "\n")
-                return None
+                exit()
             else:
                 pageKey = data.get("pageKey")
                 url = f"https://{chain}.g.alchemy.com/nft/v3/{apiKey}/getNFTsForOwner?owner={walletAddress}&withMetadata=true&pageKey={pageKey}&pageSize=100"
@@ -74,6 +76,11 @@ def imageResizer(imageData):
         else:
             image.resize((round(1080/height*width), 1080))
             return image
+        
+### Creating Collection Info
+def getCollInfo(asset):
+    image = Image.open()
+    return image
 
 with open(mainLog, "a") as logHandler:
     #Log Handling
@@ -84,14 +91,18 @@ with open(mainLog, "a") as logHandler:
             if asset["imgURL"] is None:
                 logHandler.write("Couldn't find image link for " + asset["contract"] + " " + asset["tokenID"] + "\n")
                 continue
+            elif asset["isSpam"] is True:
+                logHandler.write("Collection marked as Spam: " + asset["contract"] + " " + asset["tokenID"] + "\n")
+                continue
             else:
                 asset["imgData"] = imageLoader(asset["imgURL"])
                 print("Processing data for " + asset["collectionName"] + " " + asset["tokenID"])
                 if asset["imgData"]["fileExt"] in [".jpg", ".png"]:
                     #Handling of imagedata
                     logHandler.write("Resizing image data for " + asset["contract"] + " " + asset["tokenID"] + "\n")
-                    image = imageResizer(asset["imgData"]["binary"])
-
+                    imgAsset = imageResizer(asset["imgData"]["binary"])
+                    logHandler.write("Creating collection info for " + asset["contract"] + " " + asset["tokenID"] + "\n")
+                    imgInfo = getCollInfo(asset)
                 elif asset["imgData"]["fileExt"] in [".gif"]:
                     #Handling of videodata
                     logHandler.write("Processing video data for " + asset["contract"] + " " + asset["tokenID"] + "\n")
