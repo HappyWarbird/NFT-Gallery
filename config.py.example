@@ -1,0 +1,3 @@
+ALCHEMY_API_KEY = "<ALCHEMY_API_KEY>"
+ALCHEMY_CHAINS = ["ronin-mainnet", "arb-mainnet"]
+WALLET_ADDRESS = "<WALLET_ADDRESS>"
