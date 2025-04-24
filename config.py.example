@@ -1,3 +1,11 @@
+#Add your Alchemy API Key here
 ALCHEMY_API_KEY = "<ALCHEMY_API_KEY>"
+
+#Add all needed chains to the list, use the namings by Alchemy
 ALCHEMY_CHAINS = ["ronin-mainnet", "arb-mainnet"]
+
+#Add the Walletaddress you wanna crawl
 WALLET_ADDRESS = "<WALLET_ADDRESS>"
+
+#Add the path to the folder where you want to save the Data
+BASE_DIR = "data"

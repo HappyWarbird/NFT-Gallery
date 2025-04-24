@@ -28,7 +28,13 @@ Welcome to the **NFT Gallery** project! This application is designed to showcase
 
 ## Usage
 
-1. Run the main.py script:
+1. Copy config.py.example to config.py and edit it to your needs
+    ```bash
+    cp config.py.example config.py
+    vi config.py
+    ```
+
+2. Run the main.py script:
     ```bash
     python main.py
     ```

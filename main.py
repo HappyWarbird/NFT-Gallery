@@ -1,9 +1,8 @@
 import requests, mimetypes, datetime, io
 from PIL import Image
 from pathlib import Path
-from config import ALCHEMY_API_KEY, ALCHEMY_CHAINS, WALLET_ADDRESS
+from config import ALCHEMY_API_KEY, ALCHEMY_CHAINS, WALLET_ADDRESS, BASE_DIR
 
-baseDir = Path("data")
 mainLog = Path("data/main.log")
 
 ### Getting owned NFT Metadata from Alchemy NFT-API
@@ -88,6 +87,8 @@ with open(mainLog, "a") as logHandler:
     for chain in ALCHEMY_CHAINS:
         assetData = getNftData(WALLET_ADDRESS, chain)
         for asset in assetData:
+            #Creating Collection Folder
+            (BASE_DIR / chain / asset["contract"]).mkdir(parents=True, exist_ok=True)
             if asset["imgURL"] is None:
                 logHandler.write("Couldn't find image link for " + asset["contract"] + " " + asset["tokenID"] + "\n")
                 continue
@@ -108,6 +109,6 @@ with open(mainLog, "a") as logHandler:
                     logHandler.write("Processing video data for " + asset["contract"] + " " + asset["tokenID"] + "\n")
                     
                 else:
-                    #Can't handle that stuff...
+                    #Can't handle that stuff or it is None...
                     logHandler.write("Couldn't handle image data for " + asset["contract"] + " " + asset["tokenID"] + "\n")
                     continue
