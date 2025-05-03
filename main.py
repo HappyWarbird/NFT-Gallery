@@ -115,7 +115,7 @@ with open(mainLog, "a") as logHandler:
                     logHandler.write("No Image Data found for " + asset["contract"] + " " + asset["tokenID"] + "\n")
                     continue
                 #Creating Collection Folder
-                (Path(BASE_DIR) / chain / asset["contract"]).mkdir(parents=True, exist_ok=True)
+                (Path(BASE_DIR) / chain).mkdir(parents=True, exist_ok=True)
                 print("Processing data for " + asset["collectionName"] + " " + asset["tokenID"])
                 if asset["imgData"]["fileExt"] in [".jpg", ".png"]:
                     #Handling of imagedata
@@ -127,7 +127,7 @@ with open(mainLog, "a") as logHandler:
                     image = Image.new("RGB", (1080, 1300))
                     image.paste(imgAsset, (0, 0))
                     image.paste(imgInfo, (0, 1081))
-                    image.save(Path(BASE_DIR) / chain / asset["contract"] / (asset["tokenID"] + asset["imgData"]["fileExt"]))
+                    image.save(Path(BASE_DIR) / chain / (asset["contract"] + "-" + asset["tokenID"] + asset["imgData"]["fileExt"]))
                     logHandler.write("Saved image data for " + asset["contract"] + " " + asset["tokenID"] + "\n")
                     continue
                 elif asset["imgData"]["fileExt"] in [".gif", ".mp4", ".webm"]:
