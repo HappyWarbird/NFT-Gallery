@@ -19,15 +19,16 @@ def getNftData(walletAddress, chain):
         data = res.json()
 
         for t in data.get("ownedNfts", {}):
+            if t.get("collection") is None:
+                logHandler.write("[Error] No Collection Information found for " + t["contract"]["address"] + " on " + chain + "\n")
+                continue
             assetData.append({"imgUrl": t["image"]["cachedUrl"],
                               "imgType": t["image"]["contentType"],
                               "pngUrl": t["image"]["pngUrl"],
-                              "collectionName": t["collection"]["name"],
+                              "collectionName": t["contract"]["name"],
                               "contract": t["contract"]["address"],
                               "tokenID": t["tokenId"],
-                              "tokenName": t["name"],
-                              "isSpam": t["contract"]["isSpam"],
-                              "metadata": t["raw"]["metadata"]})
+                              "isSpam": t["contract"]["isSpam"]})
         #Pagination Handling, preventing identical pageKey Bug
         if data.get("pageKey") is not None:
             if data.get("pageKey") == pageKey:
@@ -87,10 +88,11 @@ def imageResizer(imageData):
 def getInfoPanel(asset):
     bg = Image.open("collInfoBG.png")
     img = ImageDraw.Draw(bg)
-    collFont = ImageFont.truetype("Gresham.ttf", 60)
-    traitFont = ImageFont.truetype("Gresham.ttf", 35)
-    traitsFont = ImageFont.truetype("Gresham.ttf", 25)
-    img.text((50, 50), str(asset["collectionName"]), font=collFont, fill=(0, 0, 0))
+    collFont = ImageFont.truetype("BigCaslon.ttf", 60)
+    if asset["collectionName"] is None:
+        img.text((50, 50), str(asset["contract"]), font=collFont, fill=(0, 0, 0))
+    else:
+        img.text((50, 50), str(asset["collectionName"]), font=collFont, fill=(0, 0, 0))
     img.text((50, 120), "#" + str(asset["tokenID"]), font=collFont, fill=(0, 0, 0))
     return bg
 
@@ -116,7 +118,7 @@ with open(mainLog, "a") as logHandler:
                     continue
                 #Creating Collection Folder
                 (Path(BASE_DIR) / chain).mkdir(parents=True, exist_ok=True)
-                print("Processing data for " + asset["collectionName"] + " " + asset["tokenID"])
+                print("Processing data for " + str(asset["collectionName"]) + " " + asset["tokenID"])
                 if asset["imgData"]["fileExt"] in [".jpg", ".png"]:
                     #Handling of imagedata
                     logHandler.write("Resizing image data for " + asset["contract"] + " " + asset["tokenID"] + "\n")
