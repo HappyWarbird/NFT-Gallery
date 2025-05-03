@@ -1,5 +1,5 @@
 import requests, mimetypes, datetime, io
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 from pathlib import Path
 from config import ALCHEMY_API_KEY, ALCHEMY_CHAINS, WALLET_ADDRESS, BASE_DIR
 
@@ -19,12 +19,15 @@ def getNftData(walletAddress, chain):
         data = res.json()
 
         for t in data.get("ownedNfts", {}):
-            assetData.append({"imgURL": t["image"]["originalUrl"],
-                          "collectionName": t["collection"]["name"],
-                          "contract": t["contract"]["address"],
-                          "tokenID": t["tokenId"],
-                          "isSpam": t["contract"]["isSpam"],
-                          "metadata": t["raw"]["metadata"]})
+            assetData.append({"imgUrl": t["image"]["cachedUrl"],
+                              "imgType": t["image"]["contentType"],
+                              "pngUrl": t["image"]["pngUrl"],
+                              "collectionName": t["collection"]["name"],
+                              "contract": t["contract"]["address"],
+                              "tokenID": t["tokenId"],
+                              "tokenName": t["name"],
+                              "isSpam": t["contract"]["isSpam"],
+                              "metadata": t["raw"]["metadata"]})
         #Pagination Handling, preventing identical pageKey Bug
         if data.get("pageKey") is not None:
             if data.get("pageKey") == pageKey:
@@ -65,21 +68,31 @@ def imageLoader(imgURL):
 def imageResizer(imageData):
     image = Image.open(io.BytesIO(imageData))
     if image.width == image.height:
-        image.resize((1080, 1080))
-        return image
+        img = image.resize((1080, 1080))
+        return img
     else:
         width, height = image.size
         if width > height:
-            image.resize((1080, round(1080/width*height)))
-            return image
+            img = Image.new("RGBA", (1080, 1080))
+            imgres = image.resize((1080, round(1080/width*height)))
+            img.paste(imgres, (0, round((1080-(1080/width*height))/2)))
+            return img
         else:
-            image.resize((round(1080/height*width), 1080))
-            return image
+            img = Image.new("RGBA", (1080, 1080))
+            imgres = image.resize((round(1080/height*width), 1080))
+            img.paste(imgres, (round((1080-(1080/height*width))/2), 0))
+            return img
         
 ### Creating Collection Info
-def getCollInfo(asset):
-    image = Image.open()
-    return image
+def getInfoPanel(asset):
+    bg = Image.open("collInfoBG.png")
+    img = ImageDraw.Draw(bg)
+    collFont = ImageFont.truetype("Gresham.ttf", 60)
+    traitFont = ImageFont.truetype("Gresham.ttf", 35)
+    traitsFont = ImageFont.truetype("Gresham.ttf", 25)
+    img.text((50, 50), str(asset["collectionName"]), font=collFont, fill=(0, 0, 0))
+    img.text((50, 120), "#" + str(asset["tokenID"]), font=collFont, fill=(0, 0, 0))
+    return bg
 
 with open(mainLog, "a") as logHandler:
     #Log Handling
@@ -87,24 +100,37 @@ with open(mainLog, "a") as logHandler:
     for chain in ALCHEMY_CHAINS:
         assetData = getNftData(WALLET_ADDRESS, chain)
         for asset in assetData:
-            #Creating Collection Folder
-            (BASE_DIR / chain / asset["contract"]).mkdir(parents=True, exist_ok=True)
-            if asset["imgURL"] is None:
-                logHandler.write("Couldn't find image link for " + asset["contract"] + " " + asset["tokenID"] + "\n")
-                continue
-            elif asset["isSpam"] is True:
+            if asset["isSpam"] is True:
                 logHandler.write("Collection marked as Spam: " + asset["contract"] + " " + asset["tokenID"] + "\n")
                 continue
+            elif asset["imgUrl"] is None:
+                logHandler.write("No Image URL found for " + asset["contract"] + " " + asset["tokenID"] + "\n")
+                continue
             else:
-                asset["imgData"] = imageLoader(asset["imgURL"])
+                if asset["imgType"] == "image/svg+xml":
+                    asset["imgData"] = imageLoader(asset["pngUrl"])
+                else:
+                    asset["imgData"] = imageLoader(asset["imgUrl"])
+                if asset["imgData"] is None:
+                    logHandler.write("No Image Data found for " + asset["contract"] + " " + asset["tokenID"] + "\n")
+                    continue
+                #Creating Collection Folder
+                (Path(BASE_DIR) / chain / asset["contract"]).mkdir(parents=True, exist_ok=True)
                 print("Processing data for " + asset["collectionName"] + " " + asset["tokenID"])
                 if asset["imgData"]["fileExt"] in [".jpg", ".png"]:
                     #Handling of imagedata
                     logHandler.write("Resizing image data for " + asset["contract"] + " " + asset["tokenID"] + "\n")
                     imgAsset = imageResizer(asset["imgData"]["binary"])
                     logHandler.write("Creating collection info for " + asset["contract"] + " " + asset["tokenID"] + "\n")
-                    imgInfo = getCollInfo(asset)
-                elif asset["imgData"]["fileExt"] in [".gif"]:
+                    imgInfo = getInfoPanel(asset)
+                    logHandler.write("Saving image data for " + asset["contract"] + " " + asset["tokenID"] + "\n")
+                    image = Image.new("RGB", (1080, 1300))
+                    image.paste(imgAsset, (0, 0))
+                    image.paste(imgInfo, (0, 1081))
+                    image.save(Path(BASE_DIR) / chain / asset["contract"] / (asset["tokenID"] + asset["imgData"]["fileExt"]))
+                    logHandler.write("Saved image data for " + asset["contract"] + " " + asset["tokenID"] + "\n")
+                    continue
+                elif asset["imgData"]["fileExt"] in [".gif", ".mp4", ".webm"]:
                     #Handling of videodata
                     logHandler.write("Processing video data for " + asset["contract"] + " " + asset["tokenID"] + "\n")
                     
