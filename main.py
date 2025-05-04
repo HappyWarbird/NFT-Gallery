@@ -19,9 +19,6 @@ def getNftData(walletAddress, chain):
         data = res.json()
 
         for t in data.get("ownedNfts", {}):
-            if t.get("collection") is None:
-                logHandler.write("[Error] No Collection Information found for " + t["contract"]["address"] + " on " + chain + "\n")
-                continue
             assetData.append({"imgUrl": t["image"]["cachedUrl"],
                               "imgType": t["image"]["contentType"],
                               "pngUrl": t["image"]["pngUrl"],
@@ -66,8 +63,7 @@ def imageLoader(imgURL):
                 return imgData
 
 ### Resizing image to maxsize relative 1080x1080
-def imageResizer(imageData):
-    image = Image.open(io.BytesIO(imageData))
+def imageResizer(image):
     if image.width == image.height:
         img = image.resize((1080, 1080))
         return img
@@ -90,11 +86,31 @@ def getInfoPanel(asset):
     img = ImageDraw.Draw(bg)
     collFont = ImageFont.truetype("BigCaslon.ttf", 60)
     if asset["collectionName"] is None:
-        img.text((50, 50), str(asset["contract"]), font=collFont, fill=(0, 0, 0))
+        img.text((50, 30), str(asset["contract"]), font=collFont, fill=(0, 0, 0))
     else:
-        img.text((50, 50), str(asset["collectionName"]), font=collFont, fill=(0, 0, 0))
-    img.text((50, 120), "#" + str(asset["tokenID"]), font=collFont, fill=(0, 0, 0))
+        img.text((50, 30), str(asset["collectionName"]), font=collFont, fill=(0, 0, 0))
+    img.text((50, 100), "#" + str(asset["tokenID"]), font=collFont, fill=(0, 0, 0))
     return bg
+
+def createImage(imageData, collInfo):
+    original = Image.open(io.BytesIO(imageData))
+    new = Image.new("RGBA", (1080, 1300))
+    original = imageResizer(original)
+    new.paste(original.convert("RGBA"), (0, 0))
+    new.paste(collInfo, (0, 1081))
+    return new
+
+def createGif(gifData, collInfo):
+    original = Image.open(io.BytesIO(gifData))
+    gifFrames = []
+    for frame in range(original.n_frames):
+        original.seek(frame)
+        new = Image.new("RGBA", (1080, 1300))
+        origFrame = imageResizer(original)
+        new.paste(origFrame.convert("RGBA"), (0, 0))
+        new.paste(collInfo, (0, 1081))
+        gifFrames.append(new)
+    return gifFrames
 
 with open(mainLog, "a") as logHandler:
     #Log Handling
@@ -121,22 +137,22 @@ with open(mainLog, "a") as logHandler:
                 print("Processing data for " + str(asset["collectionName"]) + " " + asset["tokenID"])
                 if asset["imgData"]["fileExt"] in [".jpg", ".png"]:
                     #Handling of imagedata
-                    logHandler.write("Resizing image data for " + asset["contract"] + " " + asset["tokenID"] + "\n")
-                    imgAsset = imageResizer(asset["imgData"]["binary"])
-                    logHandler.write("Creating collection info for " + asset["contract"] + " " + asset["tokenID"] + "\n")
+                    logHandler.write("Processing image data for " + asset["contract"] + " " + asset["tokenID"] + "\n")
                     imgInfo = getInfoPanel(asset)
-                    logHandler.write("Saving image data for " + asset["contract"] + " " + asset["tokenID"] + "\n")
-                    image = Image.new("RGB", (1080, 1300))
-                    image.paste(imgAsset, (0, 0))
-                    image.paste(imgInfo, (0, 1081))
-                    image.save(Path(BASE_DIR) / chain / (asset["contract"] + "-" + asset["tokenID"] + asset["imgData"]["fileExt"]))
+                    img = createImage(asset["imgData"]["binary"], imgInfo)
+                    img.save(Path(BASE_DIR) / chain / (asset["contract"] + "-" + asset["tokenID"] + ".png"))
                     logHandler.write("Saved image data for " + asset["contract"] + " " + asset["tokenID"] + "\n")
-                    continue
-                elif asset["imgData"]["fileExt"] in [".gif", ".mp4", ".webm"]:
+                elif asset["imgData"]["fileExt"] in [".gif"]:
+                    #Handling of gifdata
+                    logHandler.write("Processing gif data for " + asset["contract"] + " " + asset["tokenID"] + "\n")
+                    gifInfo = getInfoPanel(asset)
+                    gifFrames = createGif(asset["imgData"]["binary"], gifInfo)
+                    gifFrames[0].save(Path(BASE_DIR) / chain / (asset["contract"] + "-" + asset["tokenID"] + ".gif"), save_all=True, append_images=gifFrames[1:], loop=1)
+                    logHandler.write("Saved gif data for " + asset["contract"] + " " + asset["tokenID"] + "\n")
+                elif asset["imgData"]["fileExt"] in [".mp4", ".webm"]:
                     #Handling of videodata
                     logHandler.write("Processing video data for " + asset["contract"] + " " + asset["tokenID"] + "\n")
                     
                 else:
                     #Can't handle that stuff or it is None...
                     logHandler.write("Couldn't handle image data for " + asset["contract"] + " " + asset["tokenID"] + "\n")
-                    continue
