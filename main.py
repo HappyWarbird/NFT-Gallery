@@ -85,7 +85,7 @@ def imageResizer(image):
 def getInfoPanel(asset):
     bg = Image.open("collInfoBG.png")
     img = ImageDraw.Draw(bg)
-    collFont = ImageFont.truetype("BigCaslon.ttf", 60)
+    collFont = ImageFont.truetype("Girassol-Regular.ttf", 60)
     if asset["collectionName"] is None:
         img.text((50, 30), str(asset["contract"]).title(), font=collFont, fill=(0, 0, 0))
     else:
