@@ -2,7 +2,7 @@
 ALCHEMY_API_KEY = "<ALCHEMY_API_KEY>"
 
 #Add all needed chains to the list, use the namings by Alchemy
-ALCHEMY_CHAINS = ["ronin-mainnet", "arb-mainnet"]
+ALCHEMY_CHAINS = ["eth-mainnet", "polygon-mainnet", "arb-mainnet", "apechain-mainnet", "base-mainnet"]
 
 #Add the Walletaddress you wanna crawl
 WALLET_ADDRESS = "<WALLET_ADDRESS>"
