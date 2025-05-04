@@ -22,6 +22,7 @@ def getNftData(walletAddress, chain):
             assetData.append({"imgUrl": t["image"]["cachedUrl"],
                               "imgType": t["image"]["contentType"],
                               "pngUrl": t["image"]["pngUrl"],
+                              "origUrl": t["image"]["originalUrl"],
                               "collectionName": t["contract"]["name"],
                               "contract": t["contract"]["address"],
                               "tokenID": t["tokenId"],
@@ -122,8 +123,7 @@ with open(mainLog, "a") as logHandler:
                 logHandler.write("Collection marked as Spam: " + asset["contract"] + " " + asset["tokenID"] + "\n")
                 continue
             elif asset["imgUrl"] is None:
-                logHandler.write("No Image URL found for " + asset["contract"] + " " + asset["tokenID"] + "\n")
-                continue
+                asset["imgUrl"] = asset["origUrl"]
             else:
                 if asset["imgType"] == "image/svg+xml":
                     asset["imgData"] = imageLoader(asset["pngUrl"])
