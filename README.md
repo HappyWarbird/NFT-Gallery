@@ -9,6 +9,10 @@ Welcome to the **NFT Gallery** project! This application is designed to showcase
 - Connect and interact with blockchain wallets.
 - Responsive design for all devices.
 
+## Dependencies
+
+- Needs FFMPEG to be installed https://www.ffmpeg.org/
+
 ## Installation
 
 1. Clone the repository:

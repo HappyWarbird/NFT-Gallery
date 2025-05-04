@@ -1,4 +1,4 @@
-import requests, mimetypes, datetime, io
+import requests, mimetypes, datetime, io, ffmpy
 from PIL import Image, ImageDraw, ImageFont
 from pathlib import Path
 from config import ALCHEMY_API_KEY, ALCHEMY_CHAINS, WALLET_ADDRESS, BASE_DIR
@@ -87,7 +87,7 @@ def getInfoPanel(asset):
     img = ImageDraw.Draw(bg)
     collFont = ImageFont.truetype("BigCaslon.ttf", 60)
     if asset["collectionName"] is None:
-        img.text((50, 30), str(asset["contract"]), font=collFont, fill=(0, 0, 0))
+        img.text((50, 30), str(asset["contract"]).title(), font=collFont, fill=(0, 0, 0))
     else:
         img.text((50, 30), str(asset["collectionName"]), font=collFont, fill=(0, 0, 0))
     img.text((50, 100), "#" + str(asset["tokenID"]), font=collFont, fill=(0, 0, 0))
@@ -149,10 +149,30 @@ with open(mainLog, "a") as logHandler:
                     gifFrames = createGif(asset["imgData"]["binary"], gifInfo)
                     gifFrames[0].save(Path(BASE_DIR) / chain / (asset["contract"] + "-" + asset["tokenID"] + ".gif"), save_all=True, append_images=gifFrames[1:], loop=1)
                     logHandler.write("Saved gif data for " + asset["contract"] + " " + asset["tokenID"] + "\n")
+                    ff1 = ffmpy.FFmpeg(
+                        inputs={str(Path(BASE_DIR) / chain / (asset["contract"] + "-" + asset["tokenID"] + ".gif")): None},
+                        outputs={str(Path(BASE_DIR) / chain / (asset["contract"] + "-" + asset["tokenID"] + ".mp4")): None}
+                    )
+                    ff1.run()
+                    logHandler.write("Converted gif to mp4 for " + asset["contract"] + " " + asset["tokenID"] + "\n")
                 elif asset["imgData"]["fileExt"] in [".mp4", ".webm"]:
                     #Handling of videodata
                     logHandler.write("Processing video data for " + asset["contract"] + " " + asset["tokenID"] + "\n")
-                    
+                    videoInfo = getInfoPanel(asset)
+                    convert = None
+                    ff2 = ffmpy.FFmpeg(
+                        inputs={asset["imgData"]["binary"]: None},
+                        outputs={convert: '-vf "fps=10,scale=1080:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse"'}
+                    )
+                    ff2.run()
+                    vidFrames = createGif(convert, videoInfo)
+                    vidFrames[0].save(Path(BASE_DIR) / chain / (asset["contract"] + "-" + asset["tokenID"] + ".gif"), save_all=True, append_images=vidFrames[1:], loop=1)
+                    ff3 = ffmpy.FFmpeg(
+                        inputs={str(Path(BASE_DIR) / chain / (asset["contract"] + "-" + asset["tokenID"] + ".gif")): None},
+                        outputs={str(Path(BASE_DIR) / chain / (asset["contract"] + "-" + asset["tokenID"] + ".mp4")): None}
+                    )
+                    ff3.run()
+                    logHandler.write("Converted video to mp4 for " + asset["contract"] + " " + asset["tokenID"] + "\n")
                 else:
                     #Can't handle that stuff or it is None...
                     logHandler.write("Couldn't handle image data for " + asset["contract"] + " " + asset["tokenID"] + "\n")
