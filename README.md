@@ -7,7 +7,13 @@ Welcome to the **NFT Gallery** project! This application is designed to showcase
 - Display a gallery of NFTs. (planned)
 - View detailed information about each NFT. (planned)
 - Connect and interact with blockchain wallets.
-- Responsive design for all devices.
+- Responsive design for all devices. (planned)
+
+### What it really does :)
+- Connect to Alchemy and check your holding NFTs
+- Download the Picture/GIF of it and process it (scaling to fit 1080x1080)
+- Append a small Footer to the Picture/GIF with Contract Name and Token ID
+- Save the enriched Picture/GIF as 1080x1300
 
 ## Installation
 
